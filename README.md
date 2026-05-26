@@ -51,7 +51,6 @@ Inspired by modern visual aesthetics (such as Windows 11 design styling), it fea
 
 * **Asynchronous Execution (Non-blocking Threads)**: Heavily blocking commands like file descriptor sweeps, D-Bus queries, and systemctl actions are dispatched to background threads utilizing Rust `std::sync::mpsc` channels, keeping the GUI extremely responsive.
 * **Intelligent Localization (EN/TR)**: Features system language auto-detection (checks `LANG`, `LC_ALL`, and `LC_MESSAGES` variables). If the system language is Turkish, the interface automatically loads in **Turkish**. Otherwise, it defaults to **English**.
-* **High Symbol & Emoji Fidelity**: Automatically resolves and registers system-wide fallback fonts (`Noto Color Emoji`, `Noto Sans Symbols`) to render premium graphical icons correctly.
 * **Zero Unsafe**: Built entirely following modern Rust safety standards with zero `unsafe` blocks.
 
 ---
