@@ -5,61 +5,62 @@
 [![Platform](https://img.shields.io/badge/Platform-Linux-%23FCC624.svg?style=for-the-badge&logo=linux&logoColor=black)](https://www.kernel.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-**AE TaskManager**, Rust dili ve `egui` grafik arayüz (GUI) kütüphanesi kullanılarak geliştirilmiş; Linux işletim sistemleri için yüksek performanslı, zengin özelliklere sahip, modern ve kullanıcı dostu bir **Sistem İzleyici ve Gelişmiş Tanı Aracıdır**.
+**AE TaskManager** is a high-performance, feature-rich, and modern **System Monitor and Advanced Diagnostics Tool** for Linux operating systems, written in Rust utilizing the `egui` immediate-mode graphical user interface library.
 
-Windows 11 tasarım dilinden ilham alan modern, yuvarlatılmış köşeli karanlık teması, akıcı animasyonları ve tamamen arka planda (non-blocking) çalışan thread yapısı sayesinde arayüzde donma veya takılma olmadan pürüzsüz bir deneyim sunar.
-
----
-
-## ✨ Öne Çıkan Özellikler
-
-### 1. ⚙️ Süreç Yönetimi (Processes) & Ağaç Görünümü
-* **Detaylı Süreç Listesi**: Aktif tüm süreçleri PID, İsim, CPU%, RAM%, Disk Okuma/Yazma, Kullanıcı ve Dosya Yolu bilgileriyle listeleme, arama ve filtreleme.
-* **Sağ Tık Bağlam Menüsü (Context Menu)**:
-  * ❌ **Görevi Sonlandır**: Süreci normal yetkilerle kapatır.
-  * 🛡️ **Yönetici Olarak Zorla Kapat**: Yetki yükseltme ekranı (`pkexec`) aracılığıyla süreci root yetkileriyle zorla sonlandırır.
-  * 📂 **Dosya Konumunu Aç**: Sürecin çalıştığı dizini varsayılan dosya yöneticisinde (`xdg-open`) açar.
-  * 🔍 **Web'de Ara**: Süreç adını varsayılan tarayıcınızda aratır.
-  * 📝 **Özellikler Paneli**: Sürecin tüm detaylarını şık bir modal pencerede gösterir ve bilgileri panoya kopyalama imkanı sunar.
-* **🌳 Gelişmiş Ağaç Görünümü (Process Tree)**: Süreçleri üst-alt ilişkilerine (Parent-Child PID) göre hiyerarşik, daraltılabilir/genişletilebilir bir ağaç yapısında listeler.
-
-### 2. 📊 Gerçek Zamanlı Performans Grafikleri (Performance)
-* CPU, Bellek (RAM), GPU (varsa), Disk I/O ve Ağ (Download/Upload) kullanımlarını milisaniyelik hassasiyetle takip eden ve canlı olarak güncellenen premium grafik arayüzü.
-
-### 3. 🛠️ Systemd Servis Yöneticisi (Services)
-* Sistemdeki aktif/pasif tüm `systemd` servislerini listeleme ve durumlarına göre arama.
-* Arka planda güvenli çalışan servis kontrolleri:
-  * ▶️ Servisi Başlat / ⏸️ Durdur / 🔄 Yeniden Başlat.
-  * 🟢 Etkinleştir (Enable) / 🔴 Devre Dışı Bırak (Disable).
-* Sistem genelini etkileyen işlemler için **Polkit (`pkexec`) entegrasyonu** ile grafiksel şifre sorma ekranı.
-
-### 4. 🚀 Başlangıç Uygulamaları Yöneticisi (Startup)
-* Sistem genelinde (`/etc/xdg/autostart`) ve kullanıcı özelinde (`~/.config/autostart`) tanımlı `.desktop` başlangıç girişlerini tarar.
-* Freedesktop XDG standartlarına tam uyumlu olarak, başlangıç uygulamalarını tek tıkla açıp kapatma (güvenli copy-on-write mekanizmasıyla).
-
-### 5. 🌐 Canlı Ağ Bağlantıları Haritası (Network Sockets)
-* `/proc/net/` altındaki soket bilgilerini doğrudan okuyarak aktif tüm TCP/UDP (IPv4/IPv6) bağlantı noktalarını, uzak IP adreslerini ve durumları listeler.
-* Bağlantıyı gerçekleştiren aktif süreci (PID ve Süreç Adı) doğrudan haritalandırır.
-
-### 6. 🔒 Dosya Kilidi & Açık Dosya İzleyici (File Locks)
-* Belirli bir dosya veya dizin üzerinde kilit/erişim hakkı tutan süreçleri `/proc/*/fd/` altındaki symlink'leri tarayarak anında tespit eder.
-* Kilit tutan süreci doğrudan arayüzden sonlandırma imkanı sunar.
+Inspired by modern visual aesthetics (such as Windows 11 design styling), it features a sleek dark theme with rounded corners, smooth animations, and a fully decoupled **non-blocking worker thread architecture** that guarantees a smooth user experience without interface freezing or stuttering.
 
 ---
 
-## 🛠️ Mimari ve Performans Prensipleri
+## ✨ Features
 
-* **Asenkron Çalışma (Non-blocking Thread Model)**: Ağ taraması, servis yönetimi, dosya kilidi arama gibi ağır veya bloklayıcı işlemler, ana arayüz (GUI) thread'ini dondurmamak için arka plandaki işçi iş parçacıklarında (`std::sync::mpsc` kanalları ile) yürütülür.
-* **Yüksek Uyumluluk & Emojiler**: Linux üzerinde yüksek çözünürlüklü sembol ve emojilerin gösterilmesi için sistemdeki `Noto Color Emoji` ve `Noto Sans Symbols` font dosyalarını otomatik olarak arar ve arayüze entegre eder.
-* **Güvenlik & Sadelik**: Projede hiçbir `unsafe` kod bloğu kullanılmamış olup, tamamen güvenli Rust (Safe Rust) standartlarına sadık kalınmıştır.
+### 1. ⚙️ Process Management & Tree View
+* **Comprehensive Process List**: Monitor all active processes with details like PID, Name, CPU%, Memory (RSS)%, Disk Read/Write, Owner User, and Executable Path, with instant searching and column sorting.
+* **Right-Click Context Menu**:
+  * ❌ **Terminate Task**: Safely terminate a process with standard user permissions.
+  * 🛡️ **Force Terminate (Admin)**: Instantly force-kills a process using root permissions via graphical Polkit authorization (`pkexec`).
+  * 📂 **Open File Location**: Opens the directory of the running process in the system's default file manager (`xdg-open`).
+  * 🔍 **Search Web**: Performs a quick search of the process name in your default browser.
+  * 📝 **Properties**: Displays comprehensive process parameters in a custom-styled modal window with a copy-to-clipboard option.
+* **🌳 Expandable Process Tree View**: Groups processes hierarchically by parent/child PID relationships with collapsible/expandable nodes.
+
+### 2. 📊 Real-Time Performance Charts (Telemetry)
+* Dynamic, high-fidelity real-time line charts tracking CPU utilization, Memory (RAM) consumption, GPU Memory usage (if available), Disk Read/Write, and Network I/O (Upload/Download) with millisecond-level responsiveness.
+
+### 3. 🛠️ Systemd Services Manager
+* Scans and lists all systemd service units, showing Load, Active, and Sub states with dynamic text filtering.
+* Non-blocking control mechanisms running on background threads:
+  * ▶️ Start Service / ⏹️ Stop Service / 🔄 Restart Service.
+  * ⚡ Enable on Startup / ❌ Disable on Startup.
+* Safe administrative escalation via standard Linux Polkit (`pkexec`) displaying standard graphical password dialogs.
+
+### 4. 🚀 Startup Applications Manager
+* Scans system-wide (`/etc/xdg/autostart`) and user-specific (`~/.config/autostart`) `.desktop` startup entry files.
+* Allows user-level autostart overrides using standard copy-on-write mechanisms via interactive toggle switches.
+
+### 5. 🌐 Active Network Connections Map (Sockets)
+* Maps active network TCP/UDP (IPv4/IPv6) endpoints by directly parsing `/proc/net/` sockets on-demand.
+* Resolves local/remote endpoints, connection states, and maps them to the respective owning **Process Name** and **PID** without spawning slow external commands.
+
+### 6. 🔒 File Open & Lock Tracker
+* Sweeps `/proc/*/fd/` links dynamically to trace which active processes are holding open handles or kilit descriptors on a target directory or file path.
+* Offers inline **Terminate Task** triggers to instantly resolve locked files.
 
 ---
 
-## 🚀 Kurulum ve Çalıştırma
+## 🛠️ Architecture and Performance Principles
 
-### Gereksinimler
+* **Asynchronous Execution (Non-blocking Threads)**: Heavily blocking commands like file descriptor sweeps, D-Bus queries, and systemctl actions are dispatched to background threads utilizing Rust `std::sync::mpsc` channels, keeping the GUI extremely responsive.
+* **Intelligent Localization (EN/TR)**: Features system language auto-detection (checks `LANG`, `LC_ALL`, and `LC_MESSAGES` variables). If the system language is Turkish, the interface automatically loads in **Turkish**. Otherwise, it defaults to **English**.
+* **High Symbol & Emoji Fidelity**: Automatically resolves and registers system-wide fallback fonts (`Noto Color Emoji`, `Noto Sans Symbols`) to render premium graphical icons correctly.
+* **Zero Unsafe**: Built entirely following modern Rust safety standards with zero `unsafe` blocks.
 
-Projenin derlenmesi ve çalıştırılması için sisteminizde Rust geliştirme ortamı ve bazı kütüphanelerin bulunması gerekir.
+---
+
+## 🚀 Installation & Build Yönergeleri
+
+### Prerequisites
+
+To compile and run this application, make sure your system has Rust (Cargo) and some necessary developer packages installed.
 
 **Ubuntu / Debian / Pop!_OS:**
 ```bash
@@ -78,24 +79,24 @@ sudo dnf install dbus-devel pkg-config
 sudo pacman -Syu base-devel dbus
 ```
 
-### Derleme ve Çalıştırma
+### Build & Run
 
-Projeyi klonladıktan sonra dizine gidin ve release (optimize edilmiş) modda çalıştırın:
+Clone the repository, enter the project directory, and compile/run in optimized release mode:
 
 ```bash
-# Depoyu yerel bilgisayarınıza klonlayın (veya dizine geçin)
-cd "AE TaskManager"
+# Enter the project directory
+cd "ae-linux-task-manager"
 
-# Uygulamayı optimize edilmiş modda derleyin ve çalıştırın
+# Compile and run in release mode
 cargo run --release
 ```
 
 ---
 
-## 📄 Lisans
+## 📄 License
 
-Bu proje **MIT Lisansı** altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına göz atabilirsiniz.
+This project is licensed under the **MIT License**. For details, see the [LICENSE](LICENSE) file.
 
 ---
 
-*Geliştiren: **[AethelisDEV](https://github.com/AethelisDEV)***
+*Developed by **[AethelisDEV](https://github.com/AethelisDEV)***
