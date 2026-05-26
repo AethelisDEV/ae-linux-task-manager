@@ -12,6 +12,7 @@ pub mod theme;
 pub mod widgets {
     pub mod chart;
 }
+pub mod localization;
 
 use eframe::egui;
 use crate::system::SystemState;
@@ -20,6 +21,7 @@ use tabs::about::AboutTab;
 use tabs::performance::PerformanceTab;
 use tabs::processes::ProcessesTab;
 use theme::ThemeColors;
+use localization::Language;
 
 pub struct TaskManagerUi {
     pub current_tab: Tab,
@@ -31,10 +33,12 @@ pub struct TaskManagerUi {
     pub file_locks_tab: tabs::file_locks::FileLocksTab,
     pub about_tab: AboutTab,
     pub colors: ThemeColors,
+    pub language: Language,
 }
 
 impl TaskManagerUi {
     pub fn new() -> Self {
+        let language = Language::detect();
         Self {
             current_tab: Tab::Processes,
             processes_tab: ProcessesTab::new(),
@@ -45,6 +49,7 @@ impl TaskManagerUi {
             file_locks_tab: tabs::file_locks::FileLocksTab::new(),
             about_tab: AboutTab::new(),
             colors: ThemeColors::dark(),
+            language,
         }
     }
 
@@ -60,7 +65,7 @@ impl TaskManagerUi {
             )
             .show(ctx, |ui| {
                 ui.add_space(10.0);
-                render_sidebar(ui, &mut self.current_tab, &self.colors);
+                render_sidebar(ui, &mut self.current_tab, &self.colors, self.language);
             });
 
         // Renders the main dashboard body based on selected tab
@@ -73,22 +78,22 @@ impl TaskManagerUi {
             .show(ctx, |ui| {
                 match self.current_tab {
                     Tab::Processes => {
-                        self.processes_tab.render(ui, &state.processes.list, state.last_update, &self.colors);
+                        self.processes_tab.render(ui, &state.processes.list, state.last_update, &self.colors, self.language);
                     }
                     Tab::Performance => {
                         self.performance_tab.render(ui, state, &self.colors);
                     }
                     Tab::Services => {
-                        self.services_tab.render(ui, &self.colors);
+                        self.services_tab.render(ui, &self.colors, self.language);
                     }
                     Tab::Startup => {
-                        self.startup_tab.render(ui, &self.colors);
+                        self.startup_tab.render(ui, &self.colors, self.language);
                     }
                     Tab::Connections => {
-                        self.connections_tab.render(ui, &self.colors);
+                        self.connections_tab.render(ui, &self.colors, self.language);
                     }
                     Tab::FileLocks => {
-                        self.file_locks_tab.render(ui, &self.colors);
+                        self.file_locks_tab.render(ui, &self.colors, self.language);
                     }
                     Tab::About => {
                         self.about_tab.render(ui, state, &self.colors);

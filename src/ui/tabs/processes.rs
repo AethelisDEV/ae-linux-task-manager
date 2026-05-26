@@ -1,6 +1,7 @@
 use eframe::egui;
 use crate::system::process::{ProcessInfo, ProcessManager};
 use crate::ui::theme::{ThemeColors, card_style};
+use crate::ui::localization::{Language, tr};
 use std::sync::mpsc::{Receiver, Sender};
 use std::process::Command;
 
@@ -75,7 +76,7 @@ impl ProcessesTab {
     }
 
 
-    pub fn render(&mut self, ui: &mut egui::Ui, raw_processes: &[ProcessInfo], last_update: std::time::Instant, colors: &ThemeColors) {
+    pub fn render(&mut self, ui: &mut egui::Ui, raw_processes: &[ProcessInfo], last_update: std::time::Instant, colors: &ThemeColors, lang: Language) {
         // Poll background task channel for completed actions (admin kills, opened locations)
         while let Ok(result) = self.rx.try_recv() {
             match result {
@@ -96,10 +97,10 @@ impl ProcessesTab {
 
             ui.horizontal(|ui| {
                 // Search bar
-                ui.label(egui::RichText::new("🔍 Search:").color(colors.text_secondary));
+                ui.label(egui::RichText::new(tr("label_search", lang)).color(colors.text_secondary));
                 let search_box = ui.add(
                     egui::TextEdit::singleline(&mut self.search_query)
-                        .hint_text("Search process name or PID...")
+                        .hint_text(tr("proc_search_hint", lang))
                         .desired_width(260.0)
                 );
                 
@@ -109,7 +110,7 @@ impl ProcessesTab {
                 }
 
                 ui.add_space(20.0);
-                if ui.checkbox(&mut self.tree_view, egui::RichText::new("🌳 Ağaç Görünümü (Tree)").color(colors.text_primary)).changed() {
+                if ui.checkbox(&mut self.tree_view, egui::RichText::new(tr("proc_tree_view", lang)).color(colors.text_primary)).changed() {
                     self.last_state_update = None; // Invalidate cache to force reload
                 }
 
@@ -117,7 +118,7 @@ impl ProcessesTab {
                     let has_selection = self.selected_pid.is_some();
                     
                     let kill_btn = egui::Button::new(
-                        egui::RichText::new("⏹  End Task")
+                        egui::RichText::new(tr("menu_terminate", lang))
                             .color(if has_selection { colors.text_primary } else { colors.text_secondary })
                             .strong()
                     )
@@ -128,12 +129,20 @@ impl ProcessesTab {
                         if let Some(pid) = self.selected_pid {
                             match ProcessManager::kill_process(pid, false) {
                                 Ok(_) => {
-                                    self.kill_success = Some(format!("Sent termination signal to PID {}", pid));
+                                    self.kill_success = Some(if lang == Language::Turkish {
+                                        format!("PID {} için sonlandırma sinyali gönderildi.", pid)
+                                    } else {
+                                        format!("Sent termination signal to PID {}", pid)
+                                    });
                                     self.kill_error = None;
                                     self.selected_pid = None;
                                 }
                                 Err(e) => {
-                                    self.kill_error = Some(format!("Failed to kill PID {}: {}", pid, e));
+                                    self.kill_error = Some(if lang == Language::Turkish {
+                                        format!("PID {} kapatılamadı: {}", pid, e)
+                                    } else {
+                                        format!("Failed to kill PID {}: {}", pid, e)
+                                    });
                                     self.kill_success = None;
                                 }
                             }
@@ -248,7 +257,7 @@ impl ProcessesTab {
 
                     // Column Name
                     let btn_name = ui.add(
-                        egui::Button::new(header_style("Process Name", sort_column == SortColumn::Name, sort_direction))
+                        egui::Button::new(header_style(tr("proc_hdr_name", lang), sort_column == SortColumn::Name, sort_direction))
                             .min_size(egui::vec2(col_name_w, 24.0))
                             .fill(colors.bg_card)
                     );
@@ -256,7 +265,7 @@ impl ProcessesTab {
 
                     // Column PID
                     let btn_pid = ui.add(
-                        egui::Button::new(header_style("PID", sort_column == SortColumn::Pid, sort_direction))
+                        egui::Button::new(header_style(tr("proc_hdr_pid", lang), sort_column == SortColumn::Pid, sort_direction))
                             .min_size(egui::vec2(col_pid_w, 24.0))
                             .fill(colors.bg_card)
                     );
@@ -264,7 +273,7 @@ impl ProcessesTab {
 
                     // Column CPU %
                     let btn_cpu = ui.add(
-                        egui::Button::new(header_style("CPU %", sort_column == SortColumn::Cpu, sort_direction))
+                        egui::Button::new(header_style(tr("proc_hdr_cpu", lang), sort_column == SortColumn::Cpu, sort_direction))
                             .min_size(egui::vec2(col_cpu_w, 24.0))
                             .fill(colors.bg_card)
                     );
@@ -272,7 +281,7 @@ impl ProcessesTab {
 
                     // Column RAM
                     let btn_mem = ui.add(
-                        egui::Button::new(header_style("Memory", sort_column == SortColumn::Memory, sort_direction))
+                        egui::Button::new(header_style(tr("proc_hdr_ram", lang), sort_column == SortColumn::Memory, sort_direction))
                             .min_size(egui::vec2(col_mem_w, 24.0))
                             .fill(colors.bg_card)
                     );
@@ -280,7 +289,7 @@ impl ProcessesTab {
 
                     // Column GPU Memory
                     let btn_gpu = ui.add(
-                        egui::Button::new(header_style("GPU Memory", sort_column == SortColumn::GpuMemory, sort_direction))
+                        egui::Button::new(header_style(if lang == Language::Turkish { "GPU Belleği" } else { "GPU Memory" }, sort_column == SortColumn::GpuMemory, sort_direction))
                             .min_size(egui::vec2(col_gpu_w, 24.0))
                             .fill(colors.bg_card)
                     );
@@ -288,7 +297,7 @@ impl ProcessesTab {
 
                     // Column User
                     ui.add(
-                        egui::Button::new(egui::RichText::new("User").strong())
+                        egui::Button::new(egui::RichText::new(tr("proc_hdr_user", lang)).strong())
                             .min_size(egui::vec2(col_user_w, 24.0))
                             .fill(colors.bg_card)
                     );
@@ -349,19 +358,27 @@ impl ProcessesTab {
                                 ui.style_mut().visuals.widgets.hovered.bg_fill = colors.accent.linear_multiply(0.3);
                                 ui.style_mut().visuals.widgets.active.bg_fill = colors.accent;
 
-                                ui.label(egui::RichText::new("⚙ İşlem Seçenekleri").strong().color(colors.text_secondary));
+                                ui.label(egui::RichText::new(if lang == Language::Turkish { "⚙ İşlem Seçenekleri" } else { "⚙ Process Options" }).strong().color(colors.text_secondary));
                                 ui.separator();
 
                                 // 1. Görevi Sonlandır
-                                if ui.button(egui::RichText::new("⏹  Görevi Sonlandır").color(colors.text_primary)).clicked() {
+                                if ui.button(egui::RichText::new(tr("menu_terminate", lang)).color(colors.text_primary)).clicked() {
                                     match ProcessManager::kill_process(pid, false) {
                                         Ok(_) => {
-                                            self.kill_success = Some(format!("{} (PID {}) işlemine sonlandırma sinyali gönderildi.", p_name, pid));
+                                            self.kill_success = Some(if lang == Language::Turkish {
+                                                format!("{} (PID {}) işlemine sonlandırma sinyali gönderildi.", p_name, pid)
+                                            } else {
+                                                format!("Sent termination signal to {} (PID {}).", p_name, pid)
+                                            });
                                             self.kill_error = None;
                                             self.selected_pid = None;
                                         }
                                         Err(e) => {
-                                            self.kill_error = Some(format!("{} sonlandırılamadı: {}", p_name, e));
+                                            self.kill_error = Some(if lang == Language::Turkish {
+                                                format!("{} sonlandırılamadı: {}", p_name, e)
+                                            } else {
+                                                format!("Failed to terminate {}: {}", p_name, e)
+                                            });
                                             self.kill_success = None;
                                         }
                                     }
@@ -369,7 +386,7 @@ impl ProcessesTab {
                                 }
 
                                 // 2. Yönetici Olarak Sonlandır
-                                if ui.button(egui::RichText::new("🛡  Yönetici Olarak Sonlandır (Zorla)").color(colors.danger)).clicked() {
+                                if ui.button(egui::RichText::new(tr("menu_force_terminate", lang)).color(colors.danger)).clicked() {
                                     let name_inner = p_name.clone();
                                     let tx_inner = tx.clone();
                                     let ctx = ui.ctx().clone();
@@ -383,18 +400,34 @@ impl ProcessesTab {
                                         let res = match output {
                                             Ok(out) => {
                                                 if out.status.success() {
-                                                    Ok(format!("{} (PID {}) yönetici ayrıcalıklarıyla başarıyla zorla kapatıldı.", name_inner, pid))
+                                                    Ok(if lang == Language::Turkish {
+                                                        format!("{} (PID {}) yönetici ayrıcalıklarıyla başarıyla zorla kapatıldı.", name_inner, pid)
+                                                    } else {
+                                                        format!("{} (PID {}) successfully force-killed with administrative privileges.", name_inner, pid)
+                                                    })
                                                 } else {
                                                     let err = String::from_utf8_lossy(&out.stderr).to_string();
                                                     let err = if err.trim().is_empty() {
-                                                        "Yetkilendirme iptal edildi veya başarısız oldu.".to_string()
+                                                        if lang == Language::Turkish {
+                                                            "Yetkilendirme iptal edildi veya başarısız oldu.".to_string()
+                                                        } else {
+                                                            "Authentication cancelled or failed.".to_string()
+                                                        }
                                                     } else {
                                                         err
                                                     };
-                                                    Err(format!("{} (PID {}) yönetici olarak kapatılamadı: {}", name_inner, pid, err))
+                                                    Err(if lang == Language::Turkish {
+                                                        format!("{} (PID {}) yönetici olarak kapatılamadı: {}", name_inner, pid, err)
+                                                    } else {
+                                                        format!("Failed to kill {} (PID {}) as admin: {}", name_inner, pid, err)
+                                                    })
                                                 }
                                             }
-                                            Err(e) => Err(format!("pkexec çalıştırılamadı: {}", e)),
+                                            Err(e) => Err(if lang == Language::Turkish {
+                                                format!("pkexec çalıştırılamadı: {}", e)
+                                            } else {
+                                                format!("Failed to run pkexec: {}", e)
+                                            }),
                                         };
                                         let _ = tx_inner.send(res);
                                         ctx.request_repaint();
@@ -408,7 +441,7 @@ impl ProcessesTab {
                                 let has_exe = !p_exe.is_empty();
                                 let open_loc_btn = ui.add_enabled(
                                     has_exe,
-                                    egui::Button::new(egui::RichText::new("📂  Dosya Konumunu Aç").color(colors.text_primary))
+                                    egui::Button::new(egui::RichText::new(tr("menu_open_location", lang)).color(colors.text_primary))
                                 );
                                 if open_loc_btn.clicked() {
                                     let exe_path_inner = p_exe.clone();
@@ -422,7 +455,11 @@ impl ProcessesTab {
                                                 .arg(&parent_str)
                                                 .output();
                                             if let Err(e) = output {
-                                                let _ = tx_inner.send(Err(format!("Dosya konumu açılamadı: {}", e)));
+                                                let _ = tx_inner.send(Err(if lang == Language::Turkish {
+                                                    format!("Dosya konumu açılamadı: {}", e)
+                                                } else {
+                                                    format!("Failed to open file location: {}", e)
+                                                }));
                                                 ctx.request_repaint();
                                             }
                                         }
@@ -431,7 +468,7 @@ impl ProcessesTab {
                                 }
 
                                 // 4. İnternette Ara
-                                if ui.button(egui::RichText::new("🌐  İnternette Ara").color(colors.text_primary)).clicked() {
+                                if ui.button(egui::RichText::new(tr("menu_search_web", lang)).color(colors.text_primary)).clicked() {
                                     let name_inner = p_name.clone();
                                     let tx_inner = tx.clone();
                                     let ctx = ui.ctx().clone();
@@ -441,7 +478,11 @@ impl ProcessesTab {
                                             .arg(&query)
                                             .output();
                                         if let Err(e) = output {
-                                            let _ = tx_inner.send(Err(format!("Tarayıcı açılamadı: {}", e)));
+                                            let _ = tx_inner.send(Err(if lang == Language::Turkish {
+                                                format!("Tarayıcı açılamadı: {}", e)
+                                            } else {
+                                                format!("Failed to open browser: {}", e)
+                                            }));
                                             ctx.request_repaint();
                                         }
                                     });
@@ -451,7 +492,7 @@ impl ProcessesTab {
                                 ui.separator();
 
                                 // 5. Özellikler
-                                if ui.button(egui::RichText::new("ℹ  Özellikler").color(colors.accent_hover)).clicked() {
+                                if ui.button(egui::RichText::new(tr("menu_properties", lang)).color(colors.accent_hover)).clicked() {
                                     self.show_properties = Some(p_clone);
                                     ui.close_menu();
                                 }
@@ -616,7 +657,7 @@ impl ProcessesTab {
             let mut open = true;
             let p = self.show_properties.as_ref().unwrap().clone();
             
-            let modal = egui::Window::new(format!("⚙ Özellikler - {}", p.name))
+            let modal = egui::Window::new(format!("⚙ {} - {}", tr("modal_proc_details", lang), p.name))
                 .open(&mut open)
                 .resizable(true)
                 .default_width(450.0)
@@ -658,32 +699,32 @@ impl ProcessesTab {
                         .spacing([15.0, 10.0])
                         .show(ui, |ui| {
                             // Parent PID
-                            ui.label(egui::RichText::new("Üst İşlem (Parent PID):").color(colors.text_secondary));
-                            ui.label(egui::RichText::new(p.parent_pid.map(|id| id.to_string()).unwrap_or_else(|| "Yok (None)".to_string())).color(colors.text_primary));
+                            ui.label(egui::RichText::new(tr("modal_ppid", lang)).color(colors.text_secondary));
+                            ui.label(egui::RichText::new(p.parent_pid.map(|id| id.to_string()).unwrap_or_else(|| (if lang == Language::Turkish { "Yok" } else { "None" }).to_string())).color(colors.text_primary));
                             ui.end_row();
 
                             // CPU Usage
-                            ui.label(egui::RichText::new("CPU Kullanımı:").color(colors.text_secondary));
+                            ui.label(egui::RichText::new(if lang == Language::Turkish { "CPU Kullanımı:" } else { "CPU Usage:" }).color(colors.text_secondary));
                             ui.label(egui::RichText::new(format!("{:.1}%", p.cpu_usage)).color(if p.cpu_usage > 40.0 { colors.danger } else { colors.text_primary }).strong());
                             ui.end_row();
 
                             // RAM Usage
-                            ui.label(egui::RichText::new("Bellek (RAM):").color(colors.text_secondary));
+                            ui.label(egui::RichText::new(if lang == Language::Turkish { "Bellek (RAM):" } else { "Memory (RAM):" }).color(colors.text_secondary));
                             ui.label(egui::RichText::new(format_bytes(p.memory_bytes)).color(colors.text_primary));
                             ui.end_row();
 
                             // GPU Memory
-                            ui.label(egui::RichText::new("GPU Bellek:").color(colors.text_secondary));
+                            ui.label(egui::RichText::new(if lang == Language::Turkish { "GPU Bellek:" } else { "GPU Memory:" }).color(colors.text_secondary));
                             ui.label(egui::RichText::new(format_bytes(p.gpu_memory_bytes)).color(colors.text_primary));
                             ui.end_row();
 
                             // Status
-                            ui.label(egui::RichText::new("Durum (Status):").color(colors.text_secondary));
+                            ui.label(egui::RichText::new(tr("modal_status", lang)).color(colors.text_secondary));
                             ui.label(egui::RichText::new(&p.status).color(colors.text_primary));
                             ui.end_row();
 
                             // User Account
-                            ui.label(egui::RichText::new("Kullanıcı (User):").color(colors.text_secondary));
+                            ui.label(egui::RichText::new(tr("modal_owner", lang)).color(colors.text_secondary));
                             ui.label(egui::RichText::new(&p.username).color(colors.text_primary));
                             ui.end_row();
                         });
@@ -693,10 +734,10 @@ impl ProcessesTab {
                     ui.add_space(10.0);
 
                     // Executable path with a "Copy" button
-                    ui.label(egui::RichText::new("Dosya Yolu (Executable Path):").color(colors.text_secondary));
+                    ui.label(egui::RichText::new(if lang == Language::Turkish { "Dosya Yolu (Executable Path):" } else { "Executable Path:" }).color(colors.text_secondary));
                     ui.add_space(2.0);
                     if p.exe_path.is_empty() {
-                        ui.label(egui::RichText::new("Bilinmiyor (Unknown)").italics().color(colors.text_secondary));
+                        ui.label(egui::RichText::new(if lang == Language::Turkish { "Bilinmiyor" } else { "Unknown" }).italics().color(colors.text_secondary));
                     } else {
                         ui.horizontal(|ui| {
                             let path_label = ui.add(
@@ -706,7 +747,7 @@ impl ProcessesTab {
                             path_label.on_hover_text(&p.exe_path);
                             
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                if ui.button("📋 Kopyala").clicked() {
+                                if ui.button(tr("btn_copy", lang)).clicked() {
                                     ui.ctx().copy_text(p.exe_path.clone());
                                 }
                             });
@@ -716,7 +757,7 @@ impl ProcessesTab {
                     ui.add_space(15.0);
                     ui.horizontal(|ui| {
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.button("Kapat").clicked() {
+                            if ui.button(tr("btn_close", lang)).clicked() {
                                 close_clicked = true;
                             }
                         });

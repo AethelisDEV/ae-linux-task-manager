@@ -7,6 +7,7 @@
 use eframe::egui;
 use crate::ui::theme::{ThemeColors, card_style};
 use crate::system::startup::{StartupApp, list_startup_apps, set_startup_status};
+use crate::ui::localization::{Language, tr};
 use std::time::{Instant, Duration};
 
 /// Manages UI state, autostart record caching, and user notification banners
@@ -34,7 +35,7 @@ impl StartupTab {
     }
 
     /// Renders the startup configuration dashboard, lists autostart items, and toggles states.
-    pub fn render(&mut self, ui: &mut egui::Ui, colors: &ThemeColors) {
+    pub fn render(&mut self, ui: &mut egui::Ui, colors: &ThemeColors, lang: Language) {
         // Auto-refresh cache once every 10 seconds or when invalidated
         let needs_reload = self.last_load.is_none() 
             || self.last_load.unwrap().elapsed() > Duration::from_secs(10);
@@ -47,9 +48,9 @@ impl StartupTab {
         ui.vertical(|ui| {
             // Title and manual refresh row
             ui.horizontal(|ui| {
-                ui.label(egui::RichText::new("⚡ Başlangıç Uygulamaları").strong().size(14.0).color(colors.text_primary));
+                ui.label(egui::RichText::new(tr("start_title", lang)).strong().size(14.0).color(colors.text_primary));
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button("🔄 Yenile").clicked() {
+                    if ui.button(tr("btn_refresh", lang)).clicked() {
                         self.last_load = None;
                     }
                 });
@@ -77,7 +78,7 @@ impl StartupTab {
                     if self.cached_apps.is_empty() {
                         ui.vertical_centered(|ui| {
                             ui.add_space(40.0);
-                            ui.label(egui::RichText::new("Başlangıç uygulaması bulunamadı").color(colors.text_secondary));
+                            ui.label(egui::RichText::new(tr("start_no_entries", lang)).color(colors.text_secondary));
                         });
                         return;
                     }
@@ -95,7 +96,7 @@ impl StartupTab {
 
                                 ui.vertical(|ui| {
                                     ui.label(egui::RichText::new(&app.name).strong().color(colors.text_primary));
-                                    ui.label(egui::RichText::new(format!("Komut: {}", app.exec)).size(11.0).color(colors.text_secondary));
+                                    ui.label(egui::RichText::new(format!("{}: {}", if lang == Language::Turkish { "Komut" } else { "Command" }, app.exec)).size(11.0).color(colors.text_secondary));
                                 });
 
                                 // Dynamic toggle switch
@@ -107,20 +108,36 @@ impl StartupTab {
                                         let target_app = &self.cached_apps[idx];
                                         match set_startup_status(target_app, check_val) {
                                             Ok(_) => {
-                                                self.success_message = Some(format!(
-                                                    "'{}' başlangıç durumu '{}' olarak güncellendi.", 
-                                                    target_app.name, 
-                                                    if check_val { "Etkin" } else { "Devre Dışı" }
-                                                ));
+                                                self.success_message = Some(if lang == Language::Turkish {
+                                                    format!(
+                                                        "'{}' başlangıç durumu '{}' olarak güncellendi.", 
+                                                        target_app.name, 
+                                                        if check_val { "Etkin" } else { "Devre Dışı" }
+                                                    )
+                                                } else {
+                                                    format!(
+                                                        "Startup status of '{}' updated to '{}'.", 
+                                                        target_app.name, 
+                                                        if check_val { "Enabled" } else { "Disabled" }
+                                                    )
+                                                });
                                                 self.error_message = None;
                                                 self.last_load = None; // Force reload to apply modifications
                                             }
                                             Err(e) => {
-                                                self.error_message = Some(format!(
-                                                    "'{}' güncellenirken hata oluştu: {}", 
-                                                    target_app.name, 
-                                                    e
-                                                ));
+                                                self.error_message = Some(if lang == Language::Turkish {
+                                                    format!(
+                                                        "'{}' güncellenirken hata oluştu: {}", 
+                                                        target_app.name, 
+                                                        e
+                                                    )
+                                                } else {
+                                                    format!(
+                                                        "Error updating '{}': {}", 
+                                                        target_app.name, 
+                                                        e
+                                                    )
+                                                });
                                                 self.success_message = None;
                                             }
                                         }

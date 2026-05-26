@@ -1,5 +1,6 @@
 use eframe::egui;
 use crate::ui::theme::ThemeColors;
+use crate::ui::localization::{Language, tr};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tab {
@@ -13,32 +14,32 @@ pub enum Tab {
 }
 
 impl Tab {
-    pub fn label(&self) -> &'static str {
+    pub fn label(&self, lang: Language) -> &'static str {
         match self {
-            Tab::Processes => "Processes",
-            Tab::Performance => "Performance",
-            Tab::Services => "Services",
-            Tab::Startup => "Startup Apps",
-            Tab::Connections => "Connections",
-            Tab::FileLocks => "File Locks",
-            Tab::About => "System Info",
+            Tab::Processes => tr("tab_processes", lang),
+            Tab::Performance => tr("tab_performance", lang),
+            Tab::Services => tr("tab_services", lang),
+            Tab::Startup => tr("tab_startup", lang),
+            Tab::Connections => tr("tab_connections", lang),
+            Tab::FileLocks => tr("tab_file_locks", lang),
+            Tab::About => tr("tab_about", lang),
         }
     }
 
-    pub fn icon(&self) -> &'static str {
+    pub fn icon(&self, lang: Language) -> &'static str {
         match self {
-            Tab::Processes => "☰  Processes",
-            Tab::Performance => "📈  Performance",
-            Tab::Services => "⚙  Services",
-            Tab::Startup => "⚡  Startup Apps",
-            Tab::Connections => "🌐  Connections",
-            Tab::FileLocks => "🔒  File Locks",
-            Tab::About => "ℹ  System Info",
+            Tab::Processes => tr("tab_processes", lang),
+            Tab::Performance => tr("tab_performance", lang),
+            Tab::Services => tr("tab_services", lang),
+            Tab::Startup => tr("tab_startup", lang),
+            Tab::Connections => tr("tab_connections", lang),
+            Tab::FileLocks => tr("tab_file_locks", lang),
+            Tab::About => tr("tab_about", lang),
         }
     }
 }
 
-pub fn render_sidebar(ui: &mut egui::Ui, current_tab: &mut Tab, colors: &ThemeColors) {
+pub fn render_sidebar(ui: &mut egui::Ui, current_tab: &mut Tab, colors: &ThemeColors, lang: Language) {
     ui.vertical(|ui| {
         // App header/Logo at the top of the sidebar
         ui.vertical_centered(|ui| {
@@ -89,7 +90,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, current_tab: &mut Tab, colors: &ThemeCo
             
             // Custom button styling for active/inactive state
             let button = egui::Button::new(
-                egui::RichText::new(tab.icon())
+                egui::RichText::new(tab.icon(lang))
                     .color(text_color)
                     .strong()
                     .size(13.0)
@@ -125,7 +126,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, current_tab: &mut Tab, colors: &ThemeCo
             );
             
             ui.label(
-                egui::RichText::new("Display Backend:")
+                egui::RichText::new(tr("display_backend", lang))
                     .color(colors.border)
                     .size(10.0)
             );

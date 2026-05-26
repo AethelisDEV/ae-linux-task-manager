@@ -7,6 +7,7 @@
 use eframe::egui;
 use crate::ui::theme::{ThemeColors, card_style};
 use crate::system::systemd::{ServiceInfo, list_systemd_services, manage_service};
+use crate::ui::localization::{Language, tr};
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::{Instant, Duration};
 
@@ -45,7 +46,7 @@ impl ServicesTab {
     }
 
     /// Renders the services manager view, lists units in cards, and dispatches actions.
-    pub fn render(&mut self, ui: &mut egui::Ui, colors: &ThemeColors) {
+    pub fn render(&mut self, ui: &mut egui::Ui, colors: &ThemeColors, lang: Language) {
         // Drain any incoming background execution statuses
         while let Ok(res) = self.rx.try_recv() {
             match res {
@@ -75,15 +76,15 @@ impl ServicesTab {
         ui.vertical(|ui| {
             // Header: Search query and Manual Refresh
             ui.horizontal(|ui| {
-                ui.label(egui::RichText::new("🔍 Ara:").color(colors.text_secondary));
+                ui.label(egui::RichText::new(tr("label_search", lang)).color(colors.text_secondary));
                 ui.add(
                     egui::TextEdit::singleline(&mut self.search_query)
-                        .hint_text("Servis adı veya açıklama ara...")
+                        .hint_text(tr("svc_search_hint", lang))
                         .desired_width(260.0)
                 );
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button("🔄 Listeyi Yenile").clicked() {
+                    if ui.button(tr("btn_refresh_list", lang)).clicked() {
                         self.last_load = None; // Forces reload on next check
                     }
                 });
@@ -116,11 +117,11 @@ impl ServicesTab {
                     let col_sub_w = ui.available_width() * 0.12;
                     let col_desc_w = ui.available_width() * 0.39;
 
-                    ui.add(egui::Button::new(egui::RichText::new("Servis Adı").strong()).fill(colors.bg_card).min_size(egui::vec2(col_name_w, 24.0)));
-                    ui.add(egui::Button::new(egui::RichText::new("Yükleme").strong()).fill(colors.bg_card).min_size(egui::vec2(col_load_w, 24.0)));
-                    ui.add(egui::Button::new(egui::RichText::new("Etkinlik").strong()).fill(colors.bg_card).min_size(egui::vec2(col_active_w, 24.0)));
-                    ui.add(egui::Button::new(egui::RichText::new("Alt Durum").strong()).fill(colors.bg_card).min_size(egui::vec2(col_sub_w, 24.0)));
-                    ui.add(egui::Button::new(egui::RichText::new("Açıklama").strong()).fill(colors.bg_card).min_size(egui::vec2(col_desc_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("svc_hdr_name", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_name_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("svc_hdr_load", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_load_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("svc_hdr_active", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_active_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("svc_hdr_sub", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_sub_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("svc_hdr_desc", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_desc_w, 24.0)));
                 });
 
                 ui.add_space(5.0);
@@ -147,7 +148,7 @@ impl ServicesTab {
                         if total_rows == 0 {
                             ui.vertical_centered(|ui| {
                                 ui.add_space(40.0);
-                                ui.label(egui::RichText::new("Eşleşen servis bulunamadı").color(colors.text_secondary));
+                                ui.label(egui::RichText::new(tr("svc_no_matches", lang)).color(colors.text_secondary));
                             });
                             return;
                         }
@@ -173,15 +174,27 @@ impl ServicesTab {
                                 ui.label(egui::RichText::new(format!("⚙ {}", s_name)).strong().color(colors.text_secondary));
                                 ui.separator();
 
-                                let trigger_action = |ui: &mut egui::Ui, label: &str, action: &'static str, color: egui::Color32, s_name: &str, tx: &Sender<Result<String, String>>| {
+                                let trigger_action = move |ui: &mut egui::Ui, label: &str, action: &'static str, color: egui::Color32, s_name: &str, tx: &Sender<Result<String, String>>| {
                                     if ui.button(egui::RichText::new(label).color(color)).clicked() {
                                         let s_name_inner = s_name.to_string();
                                         let tx_inner = tx.clone();
                                         let ctx = ui.ctx().clone();
                                         std::thread::spawn(move || {
                                             let res = manage_service(&s_name_inner, action)
-                                                .map(|_| format!("Servis '{}' üzerinde '{}' işlemi başarıyla tamamlandı.", s_name_inner, action))
-                                                .map_err(|e| format!("Servis işlemi başarısız: {}", e));
+                                                .map(|_| {
+                                                    if lang == Language::Turkish {
+                                                        format!("Servis '{}' üzerinde '{}' işlemi başarıyla tamamlandı.", s_name_inner, action)
+                                                    } else {
+                                                        format!("Service '{}' action '{}' completed successfully.", s_name_inner, action)
+                                                    }
+                                                })
+                                                .map_err(|e| {
+                                                    if lang == Language::Turkish {
+                                                        format!("Servis işlemi başarısız: {}", e)
+                                                    } else {
+                                                        format!("Service action failed: {}", e)
+                                                    }
+                                                });
                                             let _ = tx_inner.send(res);
                                             ctx.request_repaint();
                                         });
@@ -189,12 +202,12 @@ impl ServicesTab {
                                     }
                                 };
 
-                                trigger_action(ui, "▶  Servisi Başlat", "start", colors.success, &s_name, &tx);
-                                trigger_action(ui, "⏹  Servisi Durdur", "stop", colors.danger, &s_name, &tx);
-                                trigger_action(ui, "🔄  Yeniden Başlat", "restart", colors.warning, &s_name, &tx);
+                                trigger_action(ui, tr("menu_svc_start", lang), "start", colors.success, &s_name, &tx);
+                                trigger_action(ui, tr("menu_svc_stop", lang), "stop", colors.danger, &s_name, &tx);
+                                trigger_action(ui, tr("menu_svc_restart", lang), "restart", colors.warning, &s_name, &tx);
                                 ui.separator();
-                                trigger_action(ui, "⚡  Başlangıçta Etkinleştir", "enable", colors.text_primary, &s_name, &tx);
-                                trigger_action(ui, "❌  Açılışta Devre Dışı Bırak", "disable", colors.text_secondary, &s_name, &tx);
+                                trigger_action(ui, tr("menu_svc_enable", lang), "enable", colors.text_primary, &s_name, &tx);
+                                trigger_action(ui, tr("menu_svc_disable", lang), "disable", colors.text_secondary, &s_name, &tx);
                             });
 
                             let rect = response.rect;

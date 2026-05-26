@@ -7,6 +7,7 @@
 use eframe::egui;
 use crate::ui::theme::{ThemeColors, card_style};
 use crate::system::network_conn::{NetworkConnection, get_active_connections};
+use crate::ui::localization::{Language, tr};
 use std::time::{Instant, Duration};
 
 /// Manages structural state, cached network connections, search queries,
@@ -31,7 +32,7 @@ impl ConnectionsTab {
     }
 
     /// Renders the network connections dashboard, lists sockets, and filters items.
-    pub fn render(&mut self, ui: &mut egui::Ui, colors: &ThemeColors) {
+    pub fn render(&mut self, ui: &mut egui::Ui, colors: &ThemeColors, lang: Language) {
         // Auto-refresh network connections list every 5 seconds or when invalidated
         let needs_reload = self.last_load.is_none() 
             || self.last_load.unwrap().elapsed() > Duration::from_secs(5);
@@ -44,15 +45,15 @@ impl ConnectionsTab {
         ui.vertical(|ui| {
             // Title and action toolbar
             ui.horizontal(|ui| {
-                ui.label(egui::RichText::new("🔍 Ara:").color(colors.text_secondary));
+                ui.label(egui::RichText::new(tr("label_search", lang)).color(colors.text_secondary));
                 ui.add(
                     egui::TextEdit::singleline(&mut self.search_query)
-                        .hint_text("Adres, port, PID veya süreç adı ara...")
+                        .hint_text(if lang == Language::Turkish { "Adres, port, PID veya süreç adı ara..." } else { "Search address, port, PID, or process name..." })
                         .desired_width(260.0)
                 );
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button("🔄 Yenile").clicked() {
+                    if ui.button(tr("btn_refresh", lang)).clicked() {
                         self.last_load = None;
                     }
                 });
@@ -75,11 +76,11 @@ impl ConnectionsTab {
                     let col_state_w = ui.available_width() * 0.16;
                     let col_process_w = ui.available_width() * 0.18;
 
-                    ui.add(egui::Button::new(egui::RichText::new("Protokol").strong()).fill(colors.bg_card).min_size(egui::vec2(col_proto_w, 24.0)));
-                    ui.add(egui::Button::new(egui::RichText::new("Yerel Adres").strong()).fill(colors.bg_card).min_size(egui::vec2(col_local_w, 24.0)));
-                    ui.add(egui::Button::new(egui::RichText::new("Uzak Adres").strong()).fill(colors.bg_card).min_size(egui::vec2(col_remote_w, 24.0)));
-                    ui.add(egui::Button::new(egui::RichText::new("Durum").strong()).fill(colors.bg_card).min_size(egui::vec2(col_state_w, 24.0)));
-                    ui.add(egui::Button::new(egui::RichText::new("Süreç (Proses)").strong()).fill(colors.bg_card).min_size(egui::vec2(col_process_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("conn_hdr_proto", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_proto_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("conn_hdr_local", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_local_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("conn_hdr_remote", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_remote_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("conn_hdr_state", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_state_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("conn_hdr_owner", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_process_w, 24.0)));
                 });
 
                 ui.add_space(5.0);
@@ -111,7 +112,7 @@ impl ConnectionsTab {
                         if total_rows == 0 {
                             ui.vertical_centered(|ui| {
                                 ui.add_space(40.0);
-                                ui.label(egui::RichText::new("Aktif bağlantı bulunamadı").color(colors.text_secondary));
+                                ui.label(egui::RichText::new(if lang == Language::Turkish { "Aktif bağlantı bulunamadı" } else { "No active connections found" }).color(colors.text_secondary));
                             });
                             return;
                         }
@@ -183,7 +184,7 @@ impl ConnectionsTab {
                             let proc_str = if let Some(pid) = c.pid {
                                 format!("{} (PID: {})", c.process_name, pid)
                             } else {
-                                "Bilinmiyor".to_string()
+                                if lang == Language::Turkish { "Bilinmiyor".to_string() } else { "Unknown".to_string() }
                             };
 
                             ui.painter().text(

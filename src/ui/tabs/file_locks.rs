@@ -8,6 +8,7 @@ use eframe::egui;
 use crate::ui::theme::{ThemeColors, card_style};
 use crate::system::file_lock::{FileLockInfo, find_locking_processes};
 use crate::system::process::ProcessManager;
+use crate::ui::localization::{Language, tr};
 
 /// Manages structural state, target paths, locking records,
 /// and operation feedback alerts for the file locks dashboard.
@@ -34,9 +35,13 @@ impl FileLocksTab {
     }
 
     /// Triggers a dynamic `/proc` file locks lookup sweep for the currently entered target path.
-    pub fn trigger_search(&mut self) {
+    pub fn trigger_search(&mut self, lang: Language) {
         if self.target_path.trim().is_empty() {
-            self.status_error = Some("Lütfen geçerli bir dosya veya klasör yolu girin.".to_string());
+            self.status_error = Some(if lang == Language::Turkish {
+                "Lütfen geçerli bir dosya veya klasör yolu girin.".to_string()
+            } else {
+                "Please enter a valid file or folder path.".to_string()
+            });
             self.status_success = None;
             return;
         }
@@ -44,28 +49,36 @@ impl FileLocksTab {
         self.cached_locks = find_locking_processes(&self.target_path);
         
         if self.cached_locks.is_empty() {
-            self.status_success = Some("Bu dosya veya klasörü kullanan herhangi bir süreç bulunamadı.".to_string());
+            self.status_success = Some(if lang == Language::Turkish {
+                "Bu dosya veya klasörü kullanan herhangi bir süreç bulunamadı.".to_string()
+            } else {
+                "No processes found holding handles on this file or folder.".to_string()
+            });
             self.status_error = None;
         } else {
-            self.status_success = Some(format!("Toplam {} süreç kilit bulundu.", self.cached_locks.len()));
+            self.status_success = Some(if lang == Language::Turkish {
+                format!("Toplam {} süreç kilit bulundu.", self.cached_locks.len())
+            } else {
+                format!("Found total of {} process locks.", self.cached_locks.len())
+            });
             self.status_error = None;
         }
     }
 
     /// Renders the file locks search dashboard and lists locking processes.
-    pub fn render(&mut self, ui: &mut egui::Ui, colors: &ThemeColors) {
+    pub fn render(&mut self, ui: &mut egui::Ui, colors: &ThemeColors, lang: Language) {
         ui.vertical(|ui| {
             // Path lookup entry bar
             ui.horizontal(|ui| {
-                ui.label(egui::RichText::new("📂 Yol (Path):").color(colors.text_secondary));
+                ui.label(egui::RichText::new(if lang == Language::Turkish { "📂 Yol (Path):" } else { "📂 Path:" }).color(colors.text_secondary));
                 ui.add(
                     egui::TextEdit::singleline(&mut self.target_path)
-                        .hint_text("Dosya veya klasör yolu girin (örn. /home/aethelis/dokuman.txt)")
+                        .hint_text(tr("lock_search_hint", lang))
                         .desired_width(340.0)
                 );
 
-                if ui.button("🔍 Kilitleri Ara").clicked() {
-                    self.trigger_search();
+                if ui.button(tr("lock_btn_scan", lang)).clicked() {
+                    self.trigger_search(lang);
                 }
             });
 
@@ -96,11 +109,11 @@ impl FileLocksTab {
                     let col_path_w = ui.available_width() * 0.33;
                     let col_act_w = ui.available_width() * 0.12;
 
-                    ui.add(egui::Button::new(egui::RichText::new("PID").strong()).fill(colors.bg_card).min_size(egui::vec2(col_pid_w, 24.0)));
-                    ui.add(egui::Button::new(egui::RichText::new("Süreç Adı").strong()).fill(colors.bg_card).min_size(egui::vec2(col_name_w, 24.0)));
-                    ui.add(egui::Button::new(egui::RichText::new("Kullanıcı").strong()).fill(colors.bg_card).min_size(egui::vec2(col_user_w, 24.0)));
-                    ui.add(egui::Button::new(egui::RichText::new("Açık Dosya").strong()).fill(colors.bg_card).min_size(egui::vec2(col_path_w, 24.0)));
-                    ui.add(egui::Button::new(egui::RichText::new("İşlem").strong()).fill(colors.bg_card).min_size(egui::vec2(col_act_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("lock_hdr_pid", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_pid_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("lock_hdr_name", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_name_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("proc_hdr_user", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_user_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("lock_hdr_path", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_path_w, 24.0)));
+                    ui.add(egui::Button::new(egui::RichText::new(tr("lock_hdr_action", lang)).strong()).fill(colors.bg_card).min_size(egui::vec2(col_act_w, 24.0)));
                 });
 
                 ui.add_space(5.0);
@@ -119,7 +132,7 @@ impl FileLocksTab {
                         if total_rows == 0 {
                             ui.vertical_centered(|ui| {
                                 ui.add_space(40.0);
-                                ui.label(egui::RichText::new("Henüz bir arama yapılmadı veya kilitli dosya bulunamadı").color(colors.text_secondary));
+                                ui.label(egui::RichText::new(if lang == Language::Turkish { "Henüz bir arama yapılmadı veya kilitli dosya bulunamadı" } else { "No search performed yet or no locked files found" }).color(colors.text_secondary));
                             });
                             return;
                         }
@@ -186,20 +199,28 @@ impl FileLocksTab {
                                 egui::vec2(60.0, 20.0)
                             );
 
-                            let end_btn = egui::Button::new(egui::RichText::new("Görevi Sonlandır").size(10.0).strong().color(colors.text_primary))
+                            let end_btn = egui::Button::new(egui::RichText::new(tr("btn_terminate", lang)).size(10.0).strong().color(colors.text_primary))
                                 .fill(colors.danger);
 
                             if ui.put(action_rect, end_btn).clicked() {
                                 let pid = l.pid;
                                 match ProcessManager::kill_process(pid, false) {
                                     Ok(_) => {
-                                        self.status_success = Some(format!("PID {} başarıyla kapatıldı.", pid));
+                                        self.status_success = Some(if lang == Language::Turkish {
+                                            format!("PID {} başarıyla kapatıldı.", pid)
+                                        } else {
+                                            format!("PID {} terminated successfully.", pid)
+                                        });
                                         self.status_error = None;
                                         // Refresh the search automatically to verify lock is cleared!
                                         self.cached_locks = find_locking_processes(&self.target_path);
                                     }
                                     Err(e) => {
-                                        self.status_error = Some(format!("Kapatma başarısız: {}", e));
+                                        self.status_error = Some(if lang == Language::Turkish {
+                                            format!("Kapatma başarısız: {}", e)
+                                        } else {
+                                            format!("Termination failed: {}", e)
+                                        });
                                         self.status_success = None;
                                     }
                                 }
