@@ -1,0 +1,19 @@
+[package]
+name = "ae_taskmanager"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+eframe = { version = "0.29", default-features = false, features = ["glow", "x11", "wayland", "default_fonts"] }
+sysinfo = "0.32"
+egui_plot = "0.29"
+parking_lot = "0.12"
+chrono = "0.4"
+egui_extras = { version = "0.29", features = ["image", "svg", "file"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
