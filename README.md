@@ -94,7 +94,7 @@ cargo run --release
 
 ## 📄 License
 
-This project is licensed under the **MIT License**. For details, see the [LICENSE](LICENSE) file.
+This project is licensed under the Apache License 2.0. For details, see the [LICENSE](LICENSE) and [NOTICE](NOTICE) files.
 
 ---
 
